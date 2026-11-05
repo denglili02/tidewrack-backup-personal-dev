@@ -22,15 +22,23 @@ who answers you) responds. Repeat across locations toward the water.
 | System | State | Notes |
 |--------|-------|-------|
 | Branching dialogue | ✅ vertical slice | JSON graphs, choices set flags. |
-| Save / load        | ✅ vertical slice | Single slot, `user://save.json`. |
+| Save / load        | ✅ vertical slice | Single slot, `user://save.json (`v2`: `scene`, `flags`, `journal`)`. |
 | Menus + settings   | ✅ vertical slice | Title, pause, volume, fullscreen. |
 | Player movement    | ✅ vertical slice | Top-down; wall collision pending. |
-| Journal            | ⏳ demo           | Tracks discovered logs; re-readable. |
+| Journal            | ⏳ demo    → launch        | Tracks discovered log lDs in discovery order; persists across save, load, and Continue. |
 | Second location    | ⏳ demo           | The lamp room. |
 | Controller + remap  | ⏳ demo          | Currently keyboard-only, built-in actions. |
 | Localization        | ⏳ press build    | String extraction + translation tables. |
 | Accessibility       | ⏳ press build    | Text scale, dyslexia-friendly font, no-flash. |
 | Steam integration   | ⏳ launch         | Achievements, cloud saves. |
+### Journal & Save Persistence (`SAVE_VERSION = 2`)
+
+Discovered journal entry IDs owned by `Journal` ([`scripts/journal.gd`](../scripts/journal.gd)) persist across `GameState.save_game()`, `GameState.load_game()`, and main-menu **Continue** through `user://save.json` ([`scripts/autoload/game_state.gd`](../scripts/autoload/game_state.gd)):
+
+* **Dedicated save field**: `save_game()` writes discovered entry IDs as an ordered string array under `"journal"` alongside `"version": 2`, `"scene"`, and `"flags"`, keeping narrative choice booleans (`skeptic`, `believer`, `trusted_edith`, `radioed_tom`) separate from log discovery state.
+* **Legacy `v1` save behavior**: Older saves with `"version": 1` (or no `"journal"` key) load `scene` and `flags` unchanged and initialize `Journal` to an empty list (`[]`) without inferring or backfilling entries from story flags.
+* **Session lifecycle**: `GameState.new_game()` clears in-memory journal entries so prior runs never bleed into a fresh playthrough, and `Journal.restore()` hydrates saved IDs on load/Continue, emitting `journal_changed` for UI refreshes without re-firing live `entry_added` cues.
+
 
 ## Interaction design
 
